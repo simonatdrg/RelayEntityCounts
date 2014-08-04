@@ -1,0 +1,15 @@
+startdate=2001-04-03
+enddate=2009-12-09
+dateresolution=range
+#
+sources=ct, medline, nih,prnews
+#inputentity.genes_ent=p51,p52,p53,NULL!
+#inputentity.diseases_ent.1="fisher syndrome",NULL!
+#inputentity.diseases_ent.2="neoplasms"
+fulltext.1='"pfizer" OR "novartis" OR "roche"',NULL!
+#fulltext.1='"companies_ent:pfizer" OR "companies_ent:novartis" OR "companies_ent:roche"',NULL!
+#inputentity.companies.1=pfizer OR novartis OR roche,NULL!
+#discover=drugs_ent
+#
+
+

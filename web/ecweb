@@ -1,0 +1,450 @@
+#!/usr/bin/env perl
+use Mojolicious::Lite;
+#use Mojolicious::Controller;
+use Data::Dumper;
+use ecwebconsts qw ($ECBASE $ECTEMPDIR $ATTIVIOURL);
+use Mojolicious::Sessions;
+#use Mojolicious::Static;
+use ECRunner;
+use File::Slurp;
+use MIME::Base64;
+
+
+plugin 'RenderFile';
+#plugin 'basic_auth';
+# 
+# this magic from http://bc-bd.org/blog/mojolicious/mojolicious-behind-apache/
+#my $base = "http://localhost:3000/ec";
+hook 'before_dispatch' => sub {
+        shift->req->url->base(Mojo::URL->new($ECBASE));
+};
+# print timestamp from a unix time value
+helper prtime => sub {
+  my ($self, $tin) = @_;
+     my  @tm =localtime($tin);
+     my $t = sprintf("%02d/%02d/%02d:%02d%02d",$tm[4]+1, $tm[3], $tm[5]-100, $tm[2],$tm[1]);
+    return $t;
+};
+
+# look at the job status and generate
+# something for the status cell in the HTML
+#table
+helper  statusmessage => sub  {
+  my ($self, $r) = @_;
+  my $msg = "";  my $t = "";
+  my $etm = $r->{endtime};
+ 
+  if ($etm) {
+    $t =$self-> prtime($etm);
+    }
+  if (exists $r->{error}) {
+    $msg = 'Error:'.$r->{error}." $t";
+  } else {
+    if ($etm) {
+       $msg = 'OK: '.$t;
+    } else {
+       $msg = "running"; 
+    }
+  }
+    $self->stash(ecstatus => $msg);
+    return $msg;
+};
+
+helper downurl => sub {
+
+    my ($self, $runrec) = @_;
+    my $et =   $runrec->{endtime};
+    my $url ;
+    # <a href="/path/to/index">Home</a>
+    if ($et) {
+      $url = sprintf("%s", '/results/'.$runrec->{_id});
+#      print STDERR "link to output = $url\n";
+    } else {
+      $url = "(not available yet)"  ;
+    }
+    return $url;
+};
+
+####
+my $sess = Mojolicious::Sessions->new;
+$sess->cookie_name('ecweb');
+$sess->default_expiration(86400*7);
+$Data::Dumper::Indent=1;
+#
+# get username for all routes
+
+under sub {
+    my $self = shift;
+    my $user;
+    my $auth   = $self->req->headers->authorization;
+    if($auth) {
+        my @a = split(/\s+/, $auth);
+        $user = decode_base64($a[1]); $user=~ s/:.*$//;
+    } else {
+        $user = 'anonymous';
+    }
+    $self->stash(user => $user);
+#  say STDERR "in the under sub user = $user";
+};
+
+get '/' => sub {
+  my $self = shift;
+  $self->render('index');
+  my $user = $self->stash('user');
+#  say STDERR "home page user = $user";
+};
+# debug -- look at passed in headers
+get '/headers' => sub {
+   my $self = shift;
+    my $host = $self->req->url->to_abs->host;
+    my $ua   = $self->req->headers->user_agent;
+    my $hdr = $self->req->headers;
+  write_file('/tmp/headers', Dumper($hdr));
+    $self->res->headers->header('X-Bender' => 'Bite my shiny metal ass!');
+    $self->render(text => "Request by $ua reached $host.");
+};
+get '/status/:runid' => sub {
+  my $self = shift;
+  my $runid = $self->stash('runid');
+    $self->stash(ECTEMPDIR => $ECTEMPDIR);
+#  print STDERR "in status with runid = ",$runid,"\n";
+  # get the info for that run
+  my $r = ECdb::getStatusRecord($runid);
+  # compose what will go into the status box
+  $self->stash(runrec => $r);
+  $self->statusmessage($r);
+  # go to correct template
+  if ( $r->{error}) {
+    $self->render('runerror');
+    return;
+  } else {
+  # and display it ...
+    }
+    $self->render('runstatus');
+}
+;
+
+# generate tabular status
+# :type can be 'all' -i.e. last 24 hours or 'current' i.e. running right now
+get '/summary/:type' => sub {
+  my $self = shift;
+  my $dtype = $self->stash('type');
+  # initially last 24 hours
+  # 
+  my $c = ECdb::getManyRecords(time() - 86400);
+  # 
+  $self->stash(cursor => $c);
+  $self->render('runhistory');
+  return;
+}
+;
+
+get '/results/:runid' => sub {
+    my $self = shift;
+  my $runid = $self->stash('runid');
+#  print STDERR "in getresults with runid = ",$runid,"\n";
+  my $r = ECdb::getStatusRecord($runid);
+  $self->render_file('filepath' => $r->{output},
+		     filename =>  $runid."_results.txt");
+
+};
+
+get '/upload' => sub {
+  my $self = shift;
+  $self->render('upload');
+};
+
+post '/upload' => sub {
+
+  my $self = shift;
+  my $z = $self->req;
+  my @par = $self->param;
+ # $Data::Dumper::Indent=1;
+ # print STDERR Dumper(\@par);
+
+    # Process uploaded file
+    my $config = $self->param('config');
+    my $name = $config->filename;
+    my $savedconf = $ECTEMPDIR."/".$name;
+    $config->move_to($savedconf);
+    say ("config file saved in $savedconf");
+    
+    # check radiobutton
+    my $mode = $self->param('mode') ;
+   # say STDERR "ec mode = $mode";
+    my ($docounts,$dodocs) = (0,0) ;
+    if ($mode eq 'counts') {
+      $docounts++;
+    } else {
+      $dodocs++;
+    }
+    my $baseurl = $self->param('baseurl');
+    say STDERR "supplied URL is ",$baseurl;
+    my $comment = $self->param('comment');
+    my $u = $self->stash('user');
+    my $runner = ECRunner->new(configfilepath=>$savedconf,
+			       docounts => $docounts,
+			       dodocs => $dodocs,
+			       comment => $comment,
+                   baseurl => $baseurl,
+                   user => $u,
+			       url => $baseurl || $ATTIVIOURL);
+    my $task = sprintf("OK: running ec for user %s with config %s<br>dodocs=%s and docounts=%s<br>comment=%s",
+    $u,
+	$name,
+	$dodocs == 1? "yes" : "no",
+	$docounts == 1 ? "yes" : " no",
+	$comment);
+    say STDERR $task;
+	$self->stash(errtext => "");
+    my ($st, $errtext) = $runner->checkconfig();
+    if ($st > 0) {
+	    $errtext =~ s/\n/<br>/gism;
+        $self->stash(errtext => $errtext);
+	    $self->render("errorpage");
+    } else {
+    # OK to run
+      my $runid = $runner->run($u);
+      $self->stash(runid => $runid);
+      $self->render("jobsubmit");
+    }
+};
+
+
+app->start;
+
+
+##############################
+__DATA__
+@@ layouts/default.html.ep
+<!DOCTYPE html>
+<html>
+<!--
+  <link type="text/css" rel="stylesheet" href="/layouts/simplerelay.css" /> 
+-->
+  <head>
+  %= stylesheet '/layouts/simplerelay.css'
+  <title><%= title %></title></head>
+  <body><%= content %></body>
+</html>
+
+@@ index.html.ep
+% layout 'default';
+% title  'Welcome' ;
+<h4>Welcome to ecweb</h4>
+<br><%= link_to Upload => '/upload'  %> a configuration file to run
+<br><%= link_to Check => '/summary/current' %> the status of recent ec runs
+
+@@ errorpage.html.ep
+% layout 'default';
+% title 'Error in Config File';
+<h4>There were errors in your configuration file</h4>
+Diagnostic messages:<br>
+<%== $errtext %>
+<br>
+Please correct them and upload the file again.
+<br><%= link_to Upload => '/upload' %>
+
+@@ jobstatuspage.html.ep
+% layout 'default';
+% title 'All EC Jobs Status';
+
+@@ runstatus.html.ep
+% layout 'default';
+% title 'EC Job Status';
+<%  use ecwebconsts qw ($ECTEMPDIR);
+    my ($u) ; %>
+  <h3>ec run status</h3>
+  <div>
+<table  border="1" cellpadding="1" cellspacing="1">
+  <tbody>
+    <tr>
+      <th>run id<br>
+      </th>
+      <th>start<br>
+      </th>
+      <th>status<br>
+      </th>
+      <th>comment<br>
+      </th>
+      <th>cfg file<br>
+      </th>
+      <th>download results<br>
+      </th>
+    </tr>
+    <tr>
+      <td>
+      <%= $runrec->{_id} %> 
+      </td>
+      <td>
+      <% my $t = prtime($runrec->{starttime}); %> <%= $t %>
+      </td>
+      <td>
+      <%= $ecstatus %>
+      </td>
+      <td>
+      <%= $runrec->{comment}  %>
+      </td>
+      <td>
+      <% my $t = $runrec->{config}; $t =~ s!${ECTEMPDIR}/!! ; $t.=" (".$runrec->{type}.")"; %> <%= $t %>
+      </td>
+      <td>
+     <% $u = downurl($runrec);
+       if ($u =~ /result/ ) {
+      <%== link_to Download => $u %>
+       % } else {
+       not yet available
+       % }
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+<br><%== link_to Submit => '/upload' %> another job 
+
+
+@@ runhistory.html.ep
+% layout 'default';
+% title 'EC Status';
+<%  use ecwebconsts qw ($ECTEMPDIR);
+my ($t, $runrec, $u);
+%>
+  <h3>EC runs history</h3>
+  <div>
+<table  border="1" cellpadding="1" cellspacing="1">
+  <tbody>
+    <tr>
+      <th>user<br>
+      </th>
+      <th>run id<br>
+      </th>
+      <th>start<br>
+      </th>
+      <th>status<br>
+      </th>
+      <th>comment<br>
+      </th>
+      <th>cfg file<br>
+      </th>
+      <th>download results<br>
+      </th>
+    </tr>
+      % while ($runrec = $cursor->next()) {
+      <tr>
+      <td> <%= $runrec->{user} %> </td>
+      <td>
+      <%= $runrec->{_id} %> 
+      </td>
+          <td>
+      <% $t = prtime($runrec->{starttime}); %> <%= $t %>
+      </td>
+          <td>
+      <%== statusmessage($runrec) %>
+      </td>
+          <td>
+      <%= $runrec->{comment}  %>
+      </td>
+         <td>
+      <% $t = $runrec->{config}; $t =~ s!${ECTEMPDIR}/!! ; $t.=" (".$runrec->{type}.")"; %> <%= $t %>
+      </td>
+        <td>
+      <% $u = downurl($runrec); 
+       if ($u =~ /result/ ) {
+      <%== link_to Download => $u %> 
+       % } else {
+       not yet available
+       % }
+      </td>
+      </tr>
+    % }
+    </tbody>
+  </table>
+</div>
+<br><%== link_to Submit => '/upload' %> another job
+
+@@ jobsubmit.html.ep
+% layout 'default';
+% title 'EC Job Submitted';
+<p>Your job <%== $runid %> is running</p>
+<p>User <%== $user %> </p>
+<p>You can check on the 
+ <%== link_to Status => '/status/'.$runid %> of this job
+<br><%== link_to Submit => '/upload' %> another job 
+
+@@ runerror.html.ep
+% layout 'default';
+% title 'EC Error';
+<p>Your job <%== $runid %> terminated with an error</p>
+<p>The error message was <br> <b><%= $ecstatus %></b>
+<br><br><%== link_to Submit => '/upload' %> another job 
+
+
+@@ upload.html.ep
+% layout 'default';
+% title 'run the EC utility';
+<h4> Choose a config file to upload </h4>
+<div>
+     %= form_for upload => (enctype => 'multipart/form-data')  =>( method => 'POST') => begin 
+        <%= file_field 'config' %>
+	<br> Generate counts
+	<%= radio_button  mode => 'counts'  %>
+	&nbsp;or write docids &nbsp;
+	<%= radio_button  mode => 'docids' %>
+    <br>Attivio URL (default http://localhost:17001)&nbsp;&nbsp;
+    <%= text_field baseurl =>'http://localhost:17001' %>
+	<br>Your optional comment here
+	<%= text_field 'comment' %>
+	<br>
+        <%= submit_button 'Upload and run' %>
+      % end
+</div>
+
+@@ form.html.ep
+% layout 'default';
+% title 'form submission';
+
+<h2> here's what you submitted </h2>
+
+@@ layouts/simplerelay.css
+/* for search window textitem */
+/* .simplecell {margin:0; padding:0; border:0; background:transparent;} */
+
+body { font-family: "Lucida Grande", Arial, sans-serif; background: #f4f5f5;
+ font-size: small;}
+  table {border:2px solid black; width: 90%; align: center;
+  font-family: "Lucida Grande", Arial, sans-serif; background: #f4f5d0;
+  line-height: 1.5; /* Override line-height to avoid spacing issues */
+font-size: small ;}
+
+th {border:1px blue; vertical-align: top;}
+td {vertical-align: top;}
+h3 {text-align: center; }
+p  {line-height: 1.5; }
+br  {line-height: 1.8; }
+
+/* styling for our html links for search entities and accountinfo*/
+
+input#ourhtmllink {
+    margin:0;
+    padding:0;
+    border:0;
+    color:#1792d6; /* Match your link colour */
+    background:transparent;
+    font:inherit; /* Inherit font settings (doesn’t work in IE7-) */
+    line-height:150%; /* Override line-height to avoid spacing issues */
+    text-decoration:underline; /* Make it look linky */
+    cursor:pointer; /* Buttons don’t make the cursor change in all browsers */
+    -moz-user-select:text; /* Make button text selectable in Gecko */
+    /* look like rest of smart gwt enterprise blue */
+    font-family: Arial, Verdana, sans-serif;
+    font-size: 10px;
+    font-weight: bold;
+}
+/* Make sure keyboard users get visual feedback */
+input#ourhtmllink:hover,
+input#ourhtmllink:focus {
+    color:#800000;
+    background-color:#e3e0d1;
+}
+
+

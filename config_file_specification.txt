@@ -1,0 +1,143 @@
+# this is a sample configuration file for the entity calculator, showing all the syntax
+# The syntax is broadly similar to that of a java properties file:
+# 
+# start date and end date must be specified in yyyy-mm-dd format
+#
+# the startdate default is 1995-01-01 (begining of Relay time)
+#
+startdate=2008-04-03
+#
+# the enddate default is today
+#
+enddate=2009-12-09
+#
+# dateresolution can take one of three values:
+#   quarterly - query by quarters
+#   range -  startdate and enddate comprise a single date range
+#   none  -  don't do any filtering by date
+#   yearly - query by calendar year
+# The default, if not specified explicitly, is quarterly
+# 
+dateresolution=quarterly
+#
+# sources are a comma separated list of content sources: It must be explicitly specified.
+# the legal sources are medline, ct, nih, patents, patentsapps, prnews, sec, events
+#
+sources=medline, prnews
+#
+# Entities to search on:
+#
+# these definitions take the form of
+#	inputentity.<entity_type>.<optional counter> = <set of entity values>
+# entity type is the name of an AIE field to be searched. These should be entity fields
+# (but don't have to be... will work on any AIE text field). 
+#
+# the valid entity fields are named as follows
+#
+# drugs_ent, diseases_ent, genes_ent, mesh, events_ent, 
+# pathways_ent, companies_ent, people_ent
+#
+# It is quite possible to have more than one search definition for a given entity: In that
+# case you must distinguish them by appending .1, .2 .... etc to the key, as shown below.
+# the set of values is comma separated. 
+#
+# Any values including embedded spaces must be enclosed in quotes
+# For convenience, genes, drugs, diseases, companies, people will refer to the corresponding
+# '_ent' field
+#  Note that any field which is not one of genes|drugs|diseases|companies|people
+#  will not be considered erroneous but will be parsed as an arbitrary
+#  AIE field - so beware of typos
+#
+inputentity.genes_ent=p51 ,p53
+inputentity.diseases_ent.1=neoplasms, "stones, kidney"
+
+# The term NULL! (note capitalization) allows you to ignore an entity when generating crosses. This is useful if
+# (say) you have three inoutentity sets allowing you to generate counts for all 3 way crosses, but also want to generate
+# two and.or one-way crosses using the same config file.
+# In the output file,  a null/ignored value  is denoted by \N (which MySQL will interpret as NULL
+#  when bulk loading from an input file)
+
+# alternative form without the _ent suffix...
+
+inputentity.diseases.2=schizophrenia
+
+# any AIE field 
+inputentity.my_arbitrary_field=hic,haec,hoc
+# 
+# You can specify a single entity for which associations will be 'discovered'; i.e. for each
+# combination of input entitiies, mulitple output lines will be generated, each with a 
+# drug (or other entity) name and the associated document count.
+#
+discover=drugs_ent
+
+
+#
+# Full text search:
+#
+# you can optionally specify a set of full text searches, comma separated. 
+# phrases must be in quotes (as with the inputentity definitions) 
+#
+# e.g.
+fulltext = "the boy stood on the burning deck", schizophrenia, "stem cells"
+# These are treated analogously to inputentity fields but the search is on the
+# default AIE 'text' field. You can specify multiple instances (fulltext.1, fulltext.2) as with entities.
+
+# It is possible to use boolean operators (AIE simple query syntax). If doing this, you must enclose the query
+# in single quotes and each search term in double quotes, otherwise ec's config file parsing gets very confused.
+# Note that the boolean operators must be capitalized. complex, parenthesized queries haven't been tested.
+
+fulltext.1='"apple" OR "orange" OR "wild cherry"'
+
+
+#
+# AIE advanced queries:
+# ***** EXPERTS ONLY !! *****
+#  You can specify a single query using AIE's advanced query syntax - this will be
+#  applied to all of the generated queries. It is not parsed by the EC program
+#  in any way. Since there can only be one instance of such a field, it is not written as a column in the output file
+#  Example:
+rawquery=AND(OR(mesh:aa, mesh:"xx bb"), AND(ct_elig_min_age:21, ct_elig_max_age:65))
+
+
+#
+# output fields
+# when running in docid mode, you can specify other AIE fields to be added to each result line.
+# the syntax is
+
+
+otherfields=field1, field2, field3
+
+# They will be appended after the docid in the order in which they are specified.
+# If any field is multivalued, individual values will be separated by a '|' delimiter
+
+
+# Output tags (static)
+# You can specify one or more  tags whose content is
+# prepended unchanged to each output line. This may be useful if multiple
+# configuration files are being automatically generated from a template and
+# you'd like to have something in each results file to distinguish it from other results files:
+
+# Example:
+outputtag.1="have a nice day"
+#
+#adds "have a nice day" to the beginning of each line.
+#
+
+### command line options: can get these by ec.pl --help
+
+	Options are:
+	--help   Print this help
+	--config=<configfile> Defaults to standard input (but this is not recommended)
+	--docs<=optional_docid_output_file>  If present, don't do counts. If option specified without the output file
+	      then write to standard output
+    --ids   print only docids matching queries, one per line. Only meaningful if --docs specified. At present, the
+	       output file will not be deduped.
+	--url=<Attivio URL> (default http://localhost:17001)
+	--test   parse config file only, exit status = 0 if OK, 1 if errors 
+	--res=<counts results output file> Can't be specified with --docs. If neither --docs
+               or --res are specified, then write counts to standard output
+	--web=key   Running in web app context (does some under-the-hood stuff, don't
+	specify if running from command line !)
+#
+
+

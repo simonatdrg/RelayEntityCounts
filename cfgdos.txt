@@ -1,0 +1,12 @@
+startdate=2008-04-03
+
+enddate=2009-12-09
+#
+sources=medline, prnews, ct
+inputentity.genes_ent=p51 p53
+inputentity.diseases_ent.1=neoplasms
+#inputentity.diseases_ent.2=measles   mumps "scarlet fever"
+inputentity.drugs_ent.1=rasagiline
+#
+
+

@@ -1,0 +1,197 @@
+/*=================================================
+	Custom styles...
+=================================================*/
+
+
+
+/*
+*	Conservative resets....
+*/
+nav ul, nav ol { list-style: none; list-style-image: none; margin: 0; padding: 0; }
+fieldset { border: 0; margin: 0; padding: 0; }
+
+/*
+*	Styles for custom elements in UI
+*/
+body { font-family: "Lucida Grande", Arial, sans-serif; background: #f4f5f5; }
+
+/* 
+* Login screen and other pages....
+*/
+.ctr-site { width: 960px; margin: 0 auto; }
+.ctr-site .logos { float: left; margin-right: 75px; margin-left: 35px; }
+/* .ctr-site .logos .relay-logo { float: left;background: url(../images/rtmlogoSmall.png) no-repeat center left;  width: 344px; height: 68px; }*/ 
+/* .ctr-site .logos .relay-logoBig { float: left;background: url(../images/rtmlogoBig.png) no-repeat center left;  width: 344px; height: 68px; } */ 
+.ctr-site .logos .relay-logoBig { float: left;background: url(../images/RELAY_BD_Live_logo_344x68.png) no-repeat center left;  width: 344px; height: 68px; } 
+
+
+.ctr-login { background: url(../images/bg-login.png) no-repeat 0 0; width: 780px; height: 206px; margin: 150px auto; padding: 100px 0 0 0;  }
+fieldset p { margin: 0 0 15px 0; }
+fieldset .btn .fp { float: left; display: block; width: auto; margin-right: 142px; margin-left: 2px; }
+fieldset .btn .fp a { font-size: 12px; color: #666; }
+fieldset input, fieldset label { padding: 5px; font-size: 14px; color: #000000;}
+fieldset input { border: 1px solid #a7a7a7; background: #f3f3f3; padding: 5px; border-radius: 3px; -moz-border-radius: 3px; width: 290px; }
+fieldset .btn input { float: left; border: 0; padding: 0; background: url(../images/btn-login.png) no-repeat 0 0; width: 71px; height: 30px; }
+.ctr-login fieldset { width: 325px; float: left; }
+
+
+
+
+
+/*
+*	Application styles...
+*/
+.ctr-header {height:40px; background: url(../images/bg-header2.png) no-repeat 0 0; }
+.ctr-header .relay-logo { margin-left: 20px; background: url(../images/img-logowseparator.png) no-repeat center left; }
+.ctr-header .app-logo { margin-left: 15px; background: url(../images/img-log-bdlive.png) no-repeat center left; }
+.ctr-header .ctr-navsearch { }
+.ctr-header .toolStrip, .buttonstrip { background: none; }
+.ctr-header .toolStrip .stretchImgButton, .buttonstrip .stretchImgButton { display: none; }
+.ctr-header .toolStrip .buttonTitle, .buttonstrip .buttonTitle { color: #4fa9db; font-weight: 600; }
+.nav { width: 100%; }
+.nav td { padding: 3px; font-size: 11px; }
+.nav .member { font-style: italic; color: #6b6b6b; font-weight: 400; width: 400px; }
+.nav .link { text-align: right; }
+.nav td:nth-child(2) { width: 100px; }
+.nav td:nth-child(3) { width: 100px; }
+.nav td:nth-child(4) { width: 55px; }
+.nav td a { font-weight: 600; color: #1792d6; text-decoration: none; }
+.ctr-utilnav { margin: 10px 0 25px 0; }
+  
+/* this controls the search region on the main screen */
+.ctr-header .selectItemControl td div, .ctr-header .selectItemControlFocused td div, 
+   .searchFieldFrm input { padding: 0 5px; font-size: 12px; color: #333; font-style: italic; 
+	  background: url(../images/bg-searchfield.png) repeat-x 0 0; border: 1px solid #a7a7a7; 
+  	  -webkit-border-top-left-radius: 3px;-webkit-border-bottom-left-radius: 3px;-moz-border-radius-topleft: 3px;
+	  -moz-border-radius-bottomleft: 3px;border-top-left-radius: 3px;border-bottom-left-radius: 3px;  }
+.ctr-header .selectItemControl td div, .ctr-header .selectItemControlFocused td div { height: 26px; line-height: 26px; } /* adjust height since this is a div */
+.scrollingMenu td { font-size: 12px; color: #999; font-style: italic; }
+
+
+.toolstripbreadcrumb { background: #FFFFFF; }
+.toolstripchart { background: #FFFFFF; }
+
+/* Bread crumb */
+.ctr-breadcrumb { width: 100%; }
+.ctr-breadcrumb nav, .tbl-breadcrumb { border: 1px solid #dcdcdc; background: #fff; border-radius: 3px; -moz-border-radius: 3px; -moz-box-shadow: 0px 1px 2px #ccc; -webkit-box-shadow: 0px 1px 2px #ccc; box-shadow: 0px 1px 2px #ccc;  }
+.ctr-breadcrumb li { float: left; padding: 7px 20px; color: #6b6b6b; }
+.ctr-breadcrumb li:nth-child(1) { padding-left: 10px; }
+.ctr-breadcrumb .type { display: block; text-transform: uppercase; font-size: 10px; }
+.ctr-breadcrumb .lbl { font-size: 20px; font-weight: 200; text-shadow: 0px 1px 1px #fff; }
+.ctr-breadcrumb .shade-0 { background: transparent; }
+.ctr-breadcrumb .shade-10 { background: #e3e3e3; }
+.ctr-breadcrumb .shade-20 { background: #d3d3d3; }
+.ctr-breadcrumb .shade-30 { background: #c3c3c3; }
+.ctr-breadcrumb .shade-40 { background: #bdbdbd; }
+.ctr-breadcrumb .shade-50 { background: #aaa; }
+.ctr-breadcrumb .shade-60 { background: #9d9d9d; }
+.ctr-breadcrumb .shade-70 { background: #8d8d8d; }
+.ctr-breadcrumb .shade-80 { background: #7b7b7b; }
+.ctr-breadcrumb .shade-90 { background: #666; }
+.ctr-breadcrumb .shade-100 { background: #515151s; }
+.ctr-breadcrumb .shade-50, .ctr-breadcrumb .shade-60, .ctr-breadcrumb .shade-70, 
+.ctr-breadcrumb .shade-80, .ctr-breadcrumb .shade-90 .ctr-breadcrumb .shade-100 
+{ color: #fff; } 
+.ctr-breadcrumb .score .lbl { color: #e54916; }
+.ctr-breadcrumb .score img { vertical-align: middle; }
+
+.tbl-breadcrumb table { border: 0; border-collapse: collapse; }
+.tbl-breadcrumb table td { padding: 4px 10px; width: auto; }
+
+/* .breadcrumb-new table td {color: #333; font-size: 9px; font-weight: 300; background: #f4f5f5} */
+
+.ctr-controloverlays { margin-left: 10px; margin-top: 17px; }
+.ctr-toolbox { position: relative; }
+.btn-toolbox { cursor: pointer; background: #26ace2; padding: 10px; color: #fff; font-weight: 600; font-size: 12px; text-transform: uppercase; text-align: center; border-radius: 3px; -moz-border-radius: 3px; }
+.ctr-flyout { position: absolute; top: 0; left: 0; width: 150px; border: 1px solid red; }
+
+.ctr-bottomtabs { margin: 10px 0; }
+.ctr-profiletabset { margin-top: 3px; }
+
+/* .ctr-footer { background: #f4f5f5 url(../images/bg-top-footer.png) repeat-x 0 0; padding: 4px 40px; font-size: 10px; color: #525252; text-align: center; } */
+.ctr-footer { background:  #e1edf9 url(../images/bg-top-footer.png) repeat-x 0 0; padding: 4px 40px; font-size: 10px; color: #525252; text-align: center; } 
+.ctr-footer a { color: #1792d6; text-decoration: underline; margin-left: 10px; }
+.ctr-footer  a:hover { text-decoration: none; }
+
+/* containers and margins... */
+.ctr-content { padding-left: 10px; padding-right: 10px; background: #f4f5f5;  }
+.ctr-body { margin-bottom: 15px; }
+.ctr-datagrid { margin-left: 15px; }
+.ctr-utils { margin: 10px 0; height: 60px; }
+
+.ctr-leftnav { text-shadow: 0px 1px 1px #fff; }
+.ctr-leftnav h3 { font-weight: 700; font-size: 15px; background: #fff; color: #6c6c6c; padding: 7px; margin: 0; border-bottom: 2px solid #e8e8e8; }
+.ctr-leftnav .box, .tabSetContainer { border: 1px solid #e8e8e8; border-radius: 4px; -moz-border-radius: 4px; -moz-box-shadow: 1px 1px 2px #ccc; -webkit-box-shadow: 1px 1px 2px #ccc; box-shadow: 1px 1px 2px #ccc; }
+.ctr-count { padding: 10px 10px 0 10px; font-size: 12px; }
+.ctr-count .curNum { font-size: 14px; font-weight: 600; color: #999; }
+.ctr-count .totalNum { font-size: 14px; font-weight: 600; color: #666; }
+.filterform { margin: 10px 0; padding: 5px 0px; }
+.filterform label, .filterform .formTitle, .box-content td.normal, .box-content .val, .box-content .sources a, .txt-hyperlink {color: #333; font-weight: 600; }
+.txt-hyperlink { cursor: pointer; cursor: hand; font-size: 12px; }
+.box-content .val { text-align: right; font-size: 11px; }
+.box-content .sources a:hover, .txt-hyperlink { text-decoration: none; color:#4fa9db; }
+.ctr-leftnav .listTable, .ctr-leftnav .gridBody { background: #f4f5f5; }
+
+/* .facet-section {background: #f4f5f5; color: #333;} */
+
+
+/* For DetailsWestArea.java SectionHeader
+  the facet header on the left, used firebug in firefox to look at the style set on the header
+  then just overwrite what we want so it looks more in tune with us */
+.imgSectionHeaderTitleclosed {
+	background: #D0D0D0;
+  font-weight: bold; 
+  font-size: 12px; color:#4fa9db;
+  font-family: "Lucida Grande", Arial, sans-serif;	
+  border-top: 2px solid #abadb3;
+  border-left: 2px solid #dbdfe5;
+  border-right: 2px solid #dbdfe5;
+  border-bottom: 2px solid #dbdfe5;
+}
+
+.facetLayout, .facetLayoutDark { background-color: #f4f5f5; }
+.facetGridDisabled, .facetGridDisabledDark, .facetGridSelectedOver, 
+.facetGridSelectedOverDark, .facetGridSelected, .facetGridSelectedDark, 
+.facetGridOver, .facetGridOverDark,.facetGrid, .facetGridDark { font-size: 12px; color:#4fa9db; border-bottom:0; margin-bottom:0; padding-bottom:0; background-color: #f4f5f5; }
+
+.box-content { padding: 10px; }
+.box-content h4 { margin: 0 0 7px 0; color: #6b6b6b; }
+.hr-rule-dotted { border-bottom: 1px dashed #dbdcdc; }
+.no-padding { padding: 0; }
+.color  {color:  #4fa9db;}
+.sectionStack { border: 0; }
+.box-content .listGrid { padding: 3px; }
+
+/* L4 Styles for data.... */
+.txt-docScore { background: #bdbdbd; color: #e54916; text-shadow: 0px 1px 1px #fff; padding: 3px; font-size: 18px; font-weight: 600; }
+.txt-docTitle { color: #ea805c; font-size: 18px; font-weight: 600; border-bottom: 1px dashed #e5e5e5; padding: 3px; }
+.txt-docTitleSimple {color: #ea805c; font-size: 12px; font-weight: 300; }
+.txt-docDesc { font-size: 12px; color: #333;  }
+.ctr-dateDocId { color: #333; }
+.lbl { font-size: 12px; width: 115px; }
+.ctr-listgrid { border: 0; }
+
+/* set gutter widths of various layout elements */
+.ravi-grid, .ctr-leftnav { margin-right: 10px; }
+.btn-return { margin-left: 10px; }
+.ctr-breakdowntabset { margin-bottom: 10px; }
+
+/*
+* contain floats....
+*/
+.cl:before, .cl:after { content: ""; display: table; }
+.cl:after { clear: both; }
+.cl { zoom: 1; }
+
+
+.filterDateRange
+{ border-bottom: 2px solid #d79900;
+background-color: #fff2ba;
+text-align: center;
+font-family: Verdana;
+font-weight: bold;
+font-size: 9px;
+color: #404040;}
+
+
+.RelayAlignment { vertical-align: middle; }
