@@ -121,7 +121,7 @@ sub write_long_skinny{
 	 push @fvals,$o;
 	}
 	
-	foreach my $f (@{$qres->{qry}->{filters}}) {
+	foreach my $f (@{$qres->{qry}->filters()}) {
 		# check if a date range and take last date
 		my ($sd, $ed)  = $f =~ m!\[(.*)\s+TO\s+(.*)\]!ims ;
 		if ($ed) {
@@ -172,13 +172,15 @@ sub write_docinfo {
 	my ($conf, $qres, $docfh) = @_;
 	# precompute the identifying columns
 	my @fvals = ();
+	my $qry = $qres->{qry};
+	my $burstfield = $qry->find_burstfield();
 	
 	# add any static output tags
 	foreach my $o (@{$conf->{otags}}){
 	 push @fvals,$o;
 	}
 	
-	foreach my $f (@{$qres->{qry}->{filters}}) {
+	foreach my $f (@{$qry->filters()}) {
 		# check if a date range and take last date
 		my ($sd, $ed)  = $f =~ m!\[(.*)\s+TO\s+(.*)\]!ims ;
 		if ($ed) {
@@ -193,17 +195,41 @@ sub write_docinfo {
 		
 		push @fvals, $f;
 	}
+	# these are the static cols for this query, computed once
 	my $cols = join ("\t", @fvals);
+	#
+	# now iterate through the result set
+	#
+	
 	foreach my $rdoc (@{$qres->{docids}}) {
+		my $splitfieldidx = undef;
 		my @thisdoc = ();
 		push @thisdoc, $rdoc->{id};
-		foreach my $field (@{$qres->{qry}->{fields}}) {
-			push @thisdoc, $rdoc->{$field};	
+		foreach my $field (@{$qry->fields()}) {
+			my $val = $rdoc->{$field};
+			push @thisdoc, $val;
+			
+			if (($field eq $burstfield) && ($val =~ /\|/)) {
+				$splitfieldidx = $#{\@thisdoc};  #offset 
+			}
+			
 		}
-		
-		say $docfh $cols,"\t", join("\t", @thisdoc);
+		# if a field to split, then generate all records
+		# based on the split
+		#
+		if (defined $splitfieldidx) {
+			my $f = $thisdoc[$splitfieldidx];
+			my @bursted = split(/\|/, $f);
+			foreach my $b (@bursted) {
+				$thisdoc[$splitfieldidx] = $b;
+				say $docfh $cols,"\t", join("\t", @thisdoc);
+			}
+		} else {
+			say $docfh $cols,"\t", join("\t", @thisdoc);
+		}
 	}
 }
+
  exit(0);
 #
 # web cleanup: We were passed the id of the Mongodb status record on the command line.
@@ -235,4 +261,6 @@ END {
     }
   }
 }
+
+
 #
