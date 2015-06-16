@@ -7,7 +7,7 @@ use FindBin qw($RealBin);
 use lib "$RealBin/.";
 use Relay::BufferedAttivioQuery;
 use ecConfig;
-use doQuery;
+use doSolrQuery;
 use Env qw ($HOME);
 use Getopt::Long;
 use Carp;
@@ -23,10 +23,10 @@ our $ECDIR="$HOME/.ec";
 mkdir ($ECDIR)  unless (-d $ECDIR);
 my$TEMPDIR = "$ECDIR/temp";
 our $opth={};
-our $ECVERSION="1.2";
+our $ECVERSION="1.3";
 
 my ($rc, $cfile, $qtype, $docout, $docfh);
-$rc = GetOptions($opth, "ids","config=s", "docs:s", "url=s", "test", "res=s", "web=s", "help");
+$rc = GetOptions($opth, "ids","config=s", "docs:s", "url=s", "test", "res=s", "web=s", "help", "debug");
 if (! $rc || $opth->{help}) {
 print STDERR  <<EOD;
 	$0: Version $ECVERSION
@@ -96,7 +96,11 @@ while ($qry = $qs->next())
 #	my $d =Data::Dumper->new([$qry]);
 #$Data::Dumper::Indent = 1;
 #	print STDERR $d->Dump;
-my $qres = doQuery->new($qry, {querytype => $qtype, url => $opth->{url}});
+$opth->{url} = "http://awsrelay1:8983/solr";
+$opth->{collection} = "relaycontent";
+my $qres = doSolrQuery->new($qry, {querytype => $qtype,
+								   collection => $opth->{collection},
+								   url => $opth->{url}});
 # say STDERR $qres->{url};
 if ($qtype =~ /counts/) {
 	write_long_skinny($conf, $qres, $countsfh);
@@ -123,9 +127,11 @@ sub write_long_skinny{
 	
 	foreach my $f (@{$qres->{qry}->filters()}) {
 		# check if a date range and take last date
+		# Solr - modified to strip off millsecs and date math stuff
 		my ($sd, $ed)  = $f =~ m!\[(.*)\s+TO\s+(.*)\]!ims ;
 		if ($ed) {
 			$f = $ed;
+			$f =~ s/T.*//;
 		} else {
 			$f =~ s/^(.*?:)//ms;
 			$f =~ s/"//g;
@@ -166,6 +172,14 @@ sub write_docids {
 	}
 }
 #
+# remove ISO 8601 trailing stuff from date field
+#
+sub reformat_date {
+	my ($d) = @_;
+	$d =~ s/T.*Z//;
+	return $d;
+}
+#
 # doC INFORMATION output
 # format is ent values fulltext-if-present source quarterdate docid
 sub write_docinfo {
@@ -185,6 +199,7 @@ sub write_docinfo {
 		my ($sd, $ed)  = $f =~ m!\[(.*)\s+TO\s+(.*)\]!ims ;
 		if ($ed) {
 			$f = $ed;
+			$f =~ s/T.*//;
 		} else {
 			$f =~ s/^(.*?:)//ms;
 			$f =~ s/"//g;
@@ -206,7 +221,12 @@ sub write_docinfo {
 		my @thisdoc = ();
 		push @thisdoc, $rdoc->{id};
 		foreach my $field (@{$qry->fields()}) {
-			my $val = $rdoc->{$field};
+			my $val;
+			if ($field =~ /_date/) {
+				$val = reformat_date($rdoc->{$field});
+			} else {
+				$val = $rdoc->{$field};
+			}
 			push @thisdoc, $val;
 			
 			if (($field eq $burstfield) && ($val =~ /\|/)) {

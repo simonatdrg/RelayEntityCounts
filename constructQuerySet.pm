@@ -10,7 +10,7 @@ use Try::Tiny;
 use File::Slurp;
 use Set::CrossProduct;
 use List::MoreUtils qw (any);
-
+use constant ISODATESUFFIX => 'T00:00:00Z';
 use parent qw(Set::CrossProduct);
 # constructor:
 # take the defined configuration and create a complete set of AIE queries
@@ -72,7 +72,7 @@ sub makeQuerySet {
 	#	say STDERR "single date range";
 		my $field = "all_facet_date";
 		$datequeries =
-		[ sprintf("%s:[%s TO %s]", $field, $cfg->{startdate}, $cfg->{enddate}) ];
+		[ sprintf("%s:[%s%s TO %s%s]", $field, $cfg->{startdate}, ISODATESUFFIX, $cfg->{enddate}, ISODATESUFFIX) ];
 	} else {
 		$datequeries = undef;
 	}
@@ -195,12 +195,13 @@ sub _generate_entity_filterquery_set {
 # rewrite a query with ors to field:term1 OR field:term2 .....
 sub _expand_orquery {
 	my($field, $qin) = @_;
-	my $rewrite='';
-	my @terms = split(/\s+OR\s+/, $qin);
-	$rewrite .= "$field:".$_." OR " foreach (@terms);
-	# remove trailing OR
-	$rewrite =~ s/\s+OR\s+$//;
+	my $rewrite= sprintf("%s:(%s)", $field, $qin);
 	return $rewrite;
+#	my @terms = split(/\s+OR\s+/, $qin);
+#	$rewrite .= "$field:".$_." OR " foreach (@terms);
+#	# remove trailing OR
+#	$rewrite =~ s/\s+OR\s+$//;
+#	return $rewrite;
 }
 
 sub _split_outputfields {
@@ -232,42 +233,39 @@ sub _split_entvals {
     }
 	return \@a;
 }
-# we add the tags text! to the full text field as a marker
-# when we get to construct the query, the text tag will be stripped off
-# and the remainder gets put in the main query field. Thatwill allow us to
-# use extended syntax for a main query if desired
-#  OBSOLETE 9/19
-sub _split_fulltext {
-	my ($str) = @_;
-	my @a = parse_line('\s*,\s*', 0, $str);
-	@a = map { $_ = "text!$_"; $_ }  @a;
-	return \@a;
-}
+
 #
-# take the property key, which may be in any of the forms
+# take the entity type, which may be in any of the forms
 # 		diseases
 #		diseases_ent
 #       diseases.<number>
 #       diseases_ent.<number>
+#		disease_ents (Solr)
+# and convert it to what Solr expects
 #  pass through unchanged any field which isn't in this form (e.g. drugs_raw)
 #and return the entity field (remembering that 'mesh' is the full field name)
 sub _normalize {
 	my ($s) = @_;
 	my @a = split(/\./, $s);
-	return $a[0] if (($a[0] eq 'mesh') || ($a[0] =~/_ent$/)) ;
-    if($a[0] =~ m/^(diseases|drugs|genes|companies|people)$/) {
-	    return $a[0]."_ent";
+	# new field names (_ents) are assumed correct
+	return $a[0] if (($a[0] eq 'mesh') || ($a[0] =~/_ents$/)) ;
+	$a[0] =~ s/companies/company/i;
+	# look for the base entity type
+    if($a[0] =~ m/^(disease|drug|gene|company|people)/) {
+	# and return the full Solr field name
+	    return $1."_ents";
     }
     #otherwise treat as an arbitrary field and return unchanged: caveat emptor
     return $a[0];
 }
 #makequarterfilters: Return an array of filter queries which filter on the quarters specified in the startdate/enddate range
-
+# change to Solr date specs
+#
 our @quarterfmt = (
-	'%s:[%s-01-01 TO %s-03-31]',
-	'%s:[%s-04-01 TO %s-06-30]',
-	'%s:[%s-07-01 TO %s-09-30]',
-	'%s:[%s-10-01 TO %s-12-31]'
+	'%s:[%s-01-01T00:00:00Z/DAY TO %s-03-31T00:00:00Z/DAY]',
+	'%s:[%s-04-01T00:00:00Z/DAY TO %s-06-30T00:00:00Z/DAY]',
+	'%s:[%s-07-01T00:00:00Z/DAY TO %s-09-30T00:00:00Z/DAY]',
+	'%s:[%s-10-01T00:00:00Z/DAY TO %s-12-31T00:00:00Z/DAY]'
 	);
 
 
@@ -315,7 +313,7 @@ sub _month2quarter {
 	return undef;
 }
 
-our $yearformat = "%s:[%s-01-01 TO %s-12-31]";
+our $yearformat = "%s:[%s-01-01%s TO %s-12-31%s]";
 
 sub makeYearFilters {
 	my ($cf, $field) = @_;
@@ -330,7 +328,7 @@ sub makeYearFilters {
 	my $nc = 0;
 	my $f;
 	while ($yc <= $endyr) {
-		$f = sprintf($yearformat, $field,$yc,$yc);
+		$f = sprintf($yearformat, $field,$yc,ISODATESUFFIX,$yc,ISODATESUFFIX);
 		push @filters, $f;
 		$yc++;
 	}

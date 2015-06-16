@@ -9,6 +9,7 @@ use Relay::Common qw(logme $RELAY_DATA $RELAY_LOGD);
 use Relay::BufferedSolrQuery;
 use ecConfig;
 use Carp;
+use Try::Tiny;
 #use Data::Dumper;
 
 sub new { 
@@ -31,8 +32,10 @@ sub _dothisquery {
 	my $a = Relay::BufferedSolrQuery->new();
 	if($baseurl) {
 		$baseurl=~s!/$!!; # url can't have trailing slash
-		$a->baseurl($baseurl) 
+		$a->baseurl($baseurl);
 	}
+   $a->collection($opth->{collection});
+   
 #	
 # handle query /filters
 #
@@ -73,22 +76,24 @@ qdone:
 	  $a->numrows(30000000);
       $a->requestsize(2000);
       # add output fields if they were specified
+	  my @fwanted = ('id');  # always
       if ($self->{qry}->fields()) {
-         $a->fields($self->{qry}->fields());
+		 push @fwanted, @{$self->{qry}->fields()};
+         $a->fields([@fwanted]);
       }
 	}
 	# all set up ... ready to do query: Save the URL for testing/debugging
-	$self->{url} = $a->URL();
-#say STDERR "doing ",$a->URL();	
+	$self->{url} = $a->SolrURL();
+ say STDERR "doing ",$a->SolrURL();	
 	if ($opth->{querytype} =~ /counts/ims) {
-         my $doc = $a->nextdoc(); # will execute the query so we can grap counts and
+         my $rset = $a->getdocs(); 
          # facets if requested
-         my $rset = $a->ResultSet();
+         # my $rset = $a->SolrResultSet();
          if (! defined $rset) {
 			$self->{numrows} = undef;
 			return;
 		}
-		$self->{numrows}  = $rset->status()->{totalRows};
+		$self->{numrows}  = $rset->totalrows();
 		$self->{facets} = undef;
 		if ($hasfacets) {
             my $fres = $rset->facetset();
@@ -99,69 +104,52 @@ qdone:
    if ($opth->{querytype} =~ /doc/ims) {
 	  # get docids, ignore facets, include other fields
 		 $self->{docids} = [];
-		 while (( my $doc = $a->nextdoc())) {
-                  if (! $self->{numrows}) {
-                     # save it the first time through
-                     $self->{numrows}  = $a->ResultSet()->status()->{totalRows};
-                  }
-         # $self->{docids} will be an AoH, where each row is a hash : key id alwayw present, plus optional other fields
-         my $resdoc = {};
-         $resdoc->{id} = $doc->{id};
-#		 foreach my $fn (@{$self->{qry}->{fields}}) {
-         foreach my $fn (@{$self->{qry}->fields()}) {
-            $resdoc->{$fn} = join('|',@{$doc->field($fn)});
-         }
-		  push @{$self->{docids}},$resdoc;
+		 my $doc;
+		eval {
+			while (( $doc = $a->nextdoc())) {	
+			   if (! $self->{numrows}) {
+						# save it the first time through
+						$self->{numrows}  = $a->totaldocs();
+			   }
+	  
+			# $self->{docids} will be an AoH, where each row is a hash : key id alwayw present, plus optional other fields
+			my $resdoc = {};
+			$resdoc->{id} = $doc->id();
+			foreach my $fn (@{$self->{qry}->fields()}) {
+			   $resdoc->{$fn} = $doc->pretty($fn,"|");
+			}
+			push @{$self->{docids}},$resdoc;
 		 }
+	  }; #end eval
+	  if ($@) {
+		 say STDERR $a->errorstatus();
+		 say STDERR 'exiting';
+		 exit(1);
+	  }
+	  
    }
 	return;
 }
 
-sub _makecomplexquery {
-   my ($self) = @_;
-    my $qry = $self->{qry};
-    my ($query, @fqarr, $qtype);
-	$qtype = 'advanced';
-	my $aquery ='';
-	my $fq;
-	foreach  $fq (@{$qry->filters()}){
-#	foreach  $fq (@{$qry->{filters}}){
-	  my ($qt,$body) = split(/#/, $fq);
-	}
-}
 #
-# _makequery: looks at the filters, and generates query /filter/querytype
-# OR queries will use advanced mode syntax.
-# FILTER(*:*, OR(o1,o2,o3...), OR(o100,0101))
-# Multiple OR queries get wrapped in an AND 
-# 
+# _makequery: looks at the filters, and generates query /filter
+# We do everything as a filter query as we're not interested in scoring
+# and each one will be cached thus making the interation more efficient
+#
 sub _makequery {
     my ($self) = @_;
     my $qry = $self->{qry};
-    my ($query, @fqarr, $qtype);
-    $qtype = 'simple';
+    my ($query, @fqarr);
 
     my @orq = ();
     @orq = grep { $_ =~ /^ORQ#/i } @{$qry->filters()};
-    # if we have or queries, generate the advnaced syntax query
+    # 
     my ($oq);
     for (my $j = 0 ; $j < scalar(@orq) ; $j++) {
         $orq[$j] =~ s/^ORQ#://;
-        $orq[$j] =~ s/\sOR/,/g;
-        $orq[$j] = sprintf('FILTER(*:*, OR(%s))', $orq[$j]);
+		push @fqarr, $orq[$j];
     }
-    # if more than one or query, wrap in AND()
-    if (scalar @orq > 1) {
-        $query = sprintf('AND(%s)', join(",", @orq));
-        $qtype = 'advanced';
-    } elsif (scalar @orq == 1) {
-        $qtype = 'advanced';
-        $query = $orq[0];
-    } else { # no orq, do everything as fqs
-#	  $qtype = 'simple';
-	  $query = '*:*';
-	  
-    }
+   $query = '*:*';  
 	
 	  if (defined ($self->{qry}->{rawquery})) {
 		
@@ -170,46 +158,20 @@ sub _makequery {
 	    if ($q =~ /^raw!/i) {
 			$q =~ s/^raw!//i ;
 			$query = $q;
-			$qtype='advanced';
         }
     } 
 # 
 # look for non-or filters
 #
-    my @fqin = grep { $_ !~ /^ORQ#/i } @{$qry->{filters}};
-    for (my $j = 0 ; $j < scalar(@fqin) ; $j++) {
-         next if ($fqin[$j] =~ /NULL!/i);
+    my @nonorfq = grep { $_ !~ /^ORQ#/i } @{$qry->{filters}};
+    for (my $j = 0 ; $j < scalar(@nonorfq) ; $j++) {
+         next if ($nonorfq[$j] =~ /NULL!/i);
 		 # remove the leading tag type
-        $fqin[$j] =~ s/^(.*?)#//;
-        push @fqarr, $fqin[$j]; 
+        $nonorfq[$j] =~ s/^(.*?)#//;
+        push @fqarr, $nonorfq[$j]; 
     }
-    return {query => $query, filterquery => \@fqarr, qtype => $qtype};
+    return {query => $query, filterquery => \@fqarr};
 }
 1;
 __END__
-
-$VAR1 = {
-          'fulltext' => '*:*',
-          'filters' => [
-                         'all_facet_date:[2008-04-03 TO 2008-06-30]',
-                         'table:medline',
-                         'diseases_ent:"asthma"',
-                         'diseases_ent:"measles"',
-                         'drugs_ent:"aspirin"',
-                         'genes_ent:"p51"'
-                       ],
-          'facets' => undef
-        };
-$VAR1 = {
-  'fulltext' => '*:*',
-  'filters' => [
-    'all_facet_date:[2008-04-03 TO 2008-06-30]',
-    'table:medline',
-    'diseases_ent:"asthma"',
-    'diseases_ent:"measles"',
-    'drugs_ent:"aspirin"',
-    'genes_ent:"p52"'
-  ],
-  'facets' => undef
-};
 
