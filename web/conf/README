@@ -1,0 +1,3 @@
+config for httpd:
+proxymojo.conf - copy to /etc/httpd/conf.d
+.htpasswd - copy to /etc/httpd/conf/ecweb

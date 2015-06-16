@@ -2,7 +2,7 @@
 use Mojolicious::Lite;
 #use Mojolicious::Controller;
 use Data::Dumper;
-use ecwebconsts qw ($ECBASE $ECTEMPDIR $ATTIVIOURL);
+use ecwebconsts qw ($ECBASE $ECTEMPDIR $SOLRURL);
 use Mojolicious::Sessions;
 #use Mojolicious::Static;
 use ECRunner;
@@ -188,7 +188,7 @@ post '/upload' => sub {
 			       comment => $comment,
                    baseurl => $baseurl,
                    user => $u,
-			       url => $baseurl || $ATTIVIOURL);
+			       url => $baseurl || $SOLRURL);
     my $task = sprintf("OK: running ec for user %s with config %s<br>dodocs=%s and docounts=%s<br>comment=%s",
     $u,
 	$name,
@@ -390,8 +390,8 @@ my ($t, $runrec, $u);
 	<%= radio_button  mode => 'counts'  %>
 	&nbsp;or write docids &nbsp;
 	<%= radio_button  mode => 'docids' %>
-    <br>Attivio URL (default http://localhost:17001)&nbsp;&nbsp;
-    <%= text_field baseurl =>'http://localhost:17001' %>
+    <br>Solr URL (default http://localhost:8983/solr/relaycontent)&nbsp;&nbsp;
+    <%= text_field baseurl =>'http://localhost:8983/solr/relaycontent' %>
 	<br>Your optional comment here
 	<%= text_field 'comment' %>
 	<br>
