@@ -195,13 +195,14 @@ sub _generate_entity_filterquery_set {
 # rewrite a query with ors to field:term1 OR field:term2 .....
 sub _expand_orquery {
 	my($field, $qin) = @_;
-	my $rewrite= sprintf("%s:(%s)", $field, $qin);
-	return $rewrite;
-#	my @terms = split(/\s+OR\s+/, $qin);
-#	$rewrite .= "$field:".$_." OR " foreach (@terms);
-#	# remove trailing OR
-#	$rewrite =~ s/\s+OR\s+$//;
+#	my $rewrite= sprintf("%s:(%s)", $field, $qin);
 #	return $rewrite;
+        my $rewrite;
+	my @terms = split(/\s+OR\s+/, $qin);
+	$rewrite .= "$field:".$_." OR " foreach (@terms);
+	# remove trailing OR
+	$rewrite =~ s/\s+OR\s+$//;
+	return $rewrite;
 }
 
 sub _split_outputfields {

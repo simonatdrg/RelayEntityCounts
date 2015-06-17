@@ -84,7 +84,7 @@ qdone:
 	}
 	# all set up ... ready to do query: Save the URL for testing/debugging
 	$self->{url} = $a->SolrURL();
- say STDERR "doing ",$a->SolrURL();	
+# say STDERR "doing ",$a->SolrURL();	
 	if ($opth->{querytype} =~ /counts/ims) {
          my $rset = $a->getdocs(); 
          # facets if requested

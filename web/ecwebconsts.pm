@@ -18,7 +18,8 @@ our @ISA   = qw(Exporter);
 # change if nedded
 $ECTEMPDIR = "/data/temp/ec";
 # fix this 
-$ECSCRIPT = "${HOME}/relay-analysis/perl/ec.d/ec.pl";
+#$ECSCRIPT = "${HOME}/relay-analysis/perl/ec.d/ec.pl";
+$ECSCRIPT = "${HOME}/gitprojects//RelayEntityCounts/ec.pl";
 # this is hardwired for a partiuclar instance of a webapp, but could change (e.g. localhost)
 $SOLRURL = "http://localhost:8983/solr/relaycontent/";
 #$ATTIVIOURL = "http://localhost:17001";
