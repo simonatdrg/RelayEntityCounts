@@ -69,7 +69,7 @@ qdone:
       $a->requestsize(1); # and make the actual query small as well
       if (my $fs = $self->{qry}->facets()->[0]) {
 		$hasfacets = 1;
-         $a->facetspec({name =>$fs, maxBuckets => 200000 });
+         $a->facetspec($fs, 200000, {});
         }
    } else {
          # docs ... assume the worst...
@@ -87,8 +87,7 @@ qdone:
 # say STDERR "doing ",$a->SolrURL();	
 	if ($opth->{querytype} =~ /counts/ims) {
          my $rset = $a->getdocs(); 
-         # facets if requested
-         # my $rset = $a->SolrResultSet();
+    
          if (! defined $rset) {
 			$self->{numrows} = undef;
 			return;
@@ -96,7 +95,7 @@ qdone:
 		$self->{numrows}  = $rset->totalrows();
 		$self->{facets} = undef;
 		if ($hasfacets) {
-            my $fres = $rset->facetset();
+            my $fres = $rset->facets();
 		$self->{facets} = $fres;	
 		}
 	}

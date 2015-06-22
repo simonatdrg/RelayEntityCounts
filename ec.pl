@@ -145,21 +145,22 @@ sub write_long_skinny{
 	}
 	if ($qres->{facets}) {
 		if ($qres->{numrows} > 0) {
+			my $facres = $qres->{facets};
 		# its a single facet...
-			my $fc = $qres->{facets}->[0] ;
+			my $ename = $facres->fieldlist()->[0];
 			# each bucket is a hashref with single k=v (facetname, count)
-			my $bucks = $fc->buckets();
-			foreach my $bu (@$bucks) {
-				my @a = %{$bu};
-				say $countsfh join("\t", @fvals), "\t", $a[0],"\t", $a[1];
-				}
-			} else {
+			my $onef = $facres->getFacet($ename);
+#		sleep 1;
+			while (my $ename_cts = $onef->next()) {
+				say $countsfh join("\t", @fvals),
+				"\t", $ename_cts->[0],"\t", $ename_cts->[1];
+			}
+		}	else {
 			say $countsfh join("\t", @fvals), "\t","none\t",$qres->{numrows};
-		} 
+		}
 	return;
 	}
 # just total counts
-#	my @fvals = map {  $_ =~  s/^(.*?:)//ms; $_} @{$qres->{qry}->{filters}};
 	say $countsfh join("\t", @fvals), "\t",$qres->{numrows};
 	return;
 }
