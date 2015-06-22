@@ -23,7 +23,7 @@ our $ECDIR="$HOME/.ec";
 mkdir ($ECDIR)  unless (-d $ECDIR);
 my$TEMPDIR = "$ECDIR/temp";
 our $opth={};
-our $ECVERSION="1.3";
+our $ECVERSION="2.0";
 
 my ($rc, $cfile, $qtype, $docout, $docfh);
 $rc = GetOptions($opth, "ids","config=s", "docs:s", "url=s", "test", "res=s", "web=s", "help", "debug");
