@@ -26,18 +26,19 @@ our $opth={};
 our $ECVERSION="2.0";
 
 my ($rc, $cfile, $qtype, $docout, $docfh);
-$rc = GetOptions($opth, "ids","config=s", "docs:s", "url=s", "test", "res=s", "web=s", "help", "debug");
+$rc = GetOptions($opth, "ids","config=s", "index=s", "docs:s", "url=s", "test", "res=s", "web=s", "help", "debug");
 if (! $rc || $opth->{help}) {
 print STDERR  <<EOD;
 	$0: Version $ECVERSION
 	Options are:
 	--help   Print this help
 	--config=<configfile> Defaults to standard input
+        --index=<solr core name> (default = 'relaycontent')
 	--docs<=optional_docid_output_file>  If present, don't do counts. If option specified without the output file
 	      then write to standard output
     --ids   print only docids matching queries, one per line. Only meaningful if --docs specified. At present, the
 	       output file will not be deduped.
-	--url=<Attivio URL> (default http://localhost:17001)
+	--url=<Solr base URL> (default http://use1a-relay01.dresources.com:8983/solr)
 	--test   parse config file only, exit status = 0 if OK, 1 if errors 
 	--res=<counts results output file> Can't be specified with --docs. If neither --docs
                or --res are specified, then write counts to standard output
@@ -96,11 +97,12 @@ while ($qry = $qs->next())
 #	my $d =Data::Dumper->new([$qry]);
 #$Data::Dumper::Indent = 1;
 #	print STDERR $d->Dump;
-$opth->{url} = "http://awsrelay1:8983/solr";
+#$opth->{url} = "http://use1a-relay01.dresources.com:8983/solr";
+$opth->{url} = "http://172.17.66.182:8983/solr";
 $opth->{collection} = "relaycontent";
 my $qres = doSolrQuery->new($qry, {querytype => $qtype,
-								   collection => $opth->{collection},
-								   url => $opth->{url}});
+			   collection => $opth->{collection},
+			   url => $opth->{url}});
 # say STDERR $qres->{url};
 if ($qtype =~ /counts/) {
 	write_long_skinny($conf, $qres, $countsfh);

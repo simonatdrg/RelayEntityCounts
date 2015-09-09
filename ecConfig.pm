@@ -43,8 +43,8 @@ sub doconfig {
   my ($t);
   my $errcnt = 0;
   my $norowprocessor = exists($popt->{norowp});
-  $self->{aiehost} = $popt->{host};
-  $self->{aieport} = $popt->{port};
+#  $self->{aiehost} = $popt->{host};
+#  $self->{aieport} = $popt->{port};
   # get stuff on the command line
   $self->{debug} = $popt->{debug};
   my $testmode = $popt->{test} ;
